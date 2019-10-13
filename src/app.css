@@ -1,0 +1,215 @@
+@import url('https://fonts.googleapis.com/css?family=Gloria+Hallelujah');
+
+body {
+    margin: 0;
+
+    font-family: 'Gloria Hallelujah';
+}
+
+.app-container {
+    display: flex;
+    overflow: hidden;
+    align-items: center;
+    justify-content: center;
+
+    height: 100vh;
+    max-height: 100vh;
+
+    background-color: #371b1b;
+}
+
+.pair {
+    display: block;
+    align-self: center;
+
+    width: 200px;
+    height: 200px;
+    margin: 0 auto;
+
+    cursor: pointer;
+
+    border-radius: 50%;
+
+    font-family: 'Gloria Hallelujah';
+    font-size: 30px;
+}
+
+.picker-container {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+
+    width: 50%;
+    height: 100%;
+}
+
+svg {
+    width: 100%;
+}
+
+.light-bulb-container {
+    width: 50%;
+    height: 100%;
+
+    text-align: center;
+
+    background-color: white;
+}
+
+.light-bulb {
+    margin: 25%;
+}
+
+.btn-container {
+    font-size: 20px;
+}
+
+.btn {
+    cursor: pointer;
+}
+
+.st1 {
+    fill: none;
+    stroke-width: 4;
+    stroke-miterlimit: 10;
+}
+
+.st2 {
+    opacity: 0.5;
+
+    fill: none;
+    stroke-width: 2;
+    stroke-miterlimit: 10;
+}
+
+.light-bulb-off {
+    font-size: 200px;
+}
+
+.btn-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 100%;
+    height: 25px;
+    margin-top: 25px;
+    padding: 10px 0;
+
+    background: white;
+}
+
+.toggle-label {
+    margin-left: 20px;
+
+    cursor: pointer;
+
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.Toastify__toast-body {
+    color: black;
+    background-color: white;
+
+    font-family: 'Gloria Hallelujah';
+    font-size: 22px;
+}
+
+#one {
+    -webkit-transform-origin: center;
+    -ms-transform-origin: center;
+    transform-origin: center;
+    -webkit-animation: line-glow 1s 0.1s infinite;
+    animation: line-glow 1s 0.1s infinite;
+}
+
+#two {
+    -webkit-transform-origin: center;
+    -ms-transform-origin: center;
+    transform-origin: center;
+    -webkit-animation: line-glow 1s 0.2s infinite;
+    animation: line-glow 1s 0.2s infinite;
+}
+
+#three {
+    -webkit-transform-origin: center;
+    -ms-transform-origin: center;
+    transform-origin: center;
+    -webkit-animation: line-glow 1s 0.3s infinite;
+    animation: line-glow 1s 0.3s infinite;
+}
+
+#four {
+    -webkit-transform-origin: center;
+    -ms-transform-origin: center;
+    transform-origin: center;
+    -webkit-animation: line-glow 1s 0.4s infinite;
+    animation: line-glow 1s 0.4s infinite;
+}
+
+#five {
+    -webkit-transform-origin: center;
+    -ms-transform-origin: center;
+    transform-origin: center;
+    -webkit-animation: line-glow 1s 0.5s infinite;
+    animation: line-glow 1s 0.5s infinite;
+}
+
+#six {
+    -webkit-transform-origin: center;
+    -ms-transform-origin: center;
+    transform-origin: center;
+    -webkit-animation: line-glow 1s 0.6s infinite;
+    animation: line-glow 1s 0.6s infinite;
+}
+
+#seven {
+    -webkit-transform-origin: center;
+    -ms-transform-origin: center;
+    transform-origin: center;
+    -webkit-animation: line-glow 1s 0.7s infinite;
+    animation: line-glow 1s 0.7s infinite;
+}
+
+#bulb-body-fill {
+    -webkit-animation: bulb-on 1s ease infinite;
+    animation: bulb-on 1s ease infinite;
+}
+
+@-webkit-keyframes line-glow {
+    10% {
+        -webkit-transform: scale(1.2);
+        transform: scale(1.2);
+
+        opacity: 1;
+    }
+}
+
+@keyframes line-glow {
+    10% {
+        -webkit-transform: scale(1.2);
+        transform: scale(1.2);
+
+        opacity: 1;
+    }
+}
+
+@-webkit-keyframes bulb-on {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes bulb-on {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}

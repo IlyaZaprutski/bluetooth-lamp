@@ -4,51 +4,26 @@ import { ChromePicker } from 'react-color';
 import Toggle from 'react-toggle';
 import 'react-toggle/style.css';
 
-import { ToastContainer, toast,Zoom } from 'react-toastify';
+import { ToastContainer, toast, Zoom } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.min.css';
+
+import * as faceapi from 'face-api.js';
 
 import LightBulb from './light-bulb';
 
 import recognition from './speech-recognition';
 
-import colors from './colors.json';
+import { getColorData, getColor, getRandomRgb } from './tools';
+
+import { POWER_ON_DATA, POWER_OFF_DATA, DEFAULT_COLOR, COLORS_MAP, EMOTION_COLORS, EMOTION_EMOJI } from './constants';
 
 import './app.css';
-
-const getColorData = ({ r, g, b }) => {
-    return new Uint8Array([0x56, r, g, b, 0x00, 0xf0, 0xaa]);
-};
-
-const getColor = rgb => {
-    return `rgb(${rgb.r},${rgb.g},${rgb.b})`;
-};
-
-const getRandomRgb = () => {
-    var o = Math.round,
-        r = Math.random,
-        s = 255;
-
-    return {
-        r: o(r() * s),
-        g: o(r() * s),
-        b: o(r() * s),
-    };
-};
-
-const POWER_ON_DATA = new Uint8Array([0xcc, 0x23, 0x33]);
-const POWER_OFF_DATA = new Uint8Array([0xcc, 0x24, 0x33]);
-
-const DEFAULT_COLOR = {
-    r: 255,
-    g: 0,
-    b: 0,
-};
-
-const COLORS_MAP = new Map(colors.map(i => [i.name, i.color]));
 
 class App extends React.Component {
     constructor(props) {
         super(props);
+
+        this.videoRef = React.createRef();
 
         recognition.onspeechend = () => {
             recognition.stop();
@@ -79,8 +54,9 @@ class App extends React.Component {
 
     state = {
         color: getColor(DEFAULT_COLOR),
-        isConnected: false,
+        isConnected: true,
         isOn: true,
+        emotion: null,
     };
 
     onPair = async () => {
@@ -107,13 +83,13 @@ class App extends React.Component {
 
         this.setState({ isConnected: true });
 
-        await this.characteristic.writeValue(getColorData(DEFAULT_COLOR));
+        //  await this.characteristic.writeValue(getColorData(DEFAULT_COLOR));
     };
 
     changeColor = async rgbColor => {
         this.setState({ color: getColor(rgbColor) });
 
-        await this.characteristic.writeValue(getColorData(rgbColor));
+        //  await this.characteristic.writeValue(getColorData(rgbColor));
     };
 
     handleChangeComplete = color => this.changeColor(color.rgb);
@@ -121,7 +97,7 @@ class App extends React.Component {
     onPowerToggle = async () => {
         const commandData = this.state.isOn ? POWER_OFF_DATA : POWER_ON_DATA;
 
-        await this.characteristic.writeValue(commandData);
+        // await this.characteristic.writeValue(commandData);
 
         this.setState({
             isOn: !this.state.isOn,
@@ -134,12 +110,48 @@ class App extends React.Component {
 
             this.setState({ color: getColor(color) });
 
-            await this.characteristic.writeValue(getColorData(color));
+            //  await this.characteristic.writeValue(getColorData(color));
         }, 700);
     };
 
     onSpeechDetect = () => {
         recognition.start();
+    };
+
+    onEmotionDetect = async () => {
+        try {
+            await Promise.all([
+                faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+                faceapi.nets.faceExpressionNet.loadFromUri('/models'),
+            ]);
+
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
+            const video = this.videoRef.current;
+            video.srcObject = stream;
+
+            setInterval(async () => {
+                const detection = await faceapi
+                    .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+                    .withFaceExpressions();
+
+                if (detection) {
+                    const emotion = Object.keys(detection.expressions).reduce((a, b) =>
+                        detection.expressions[a] > detection.expressions[b] ? a : b,
+                    );
+
+                    if (this.state.emotion !== emotion) {
+                        this.changeColor(EMOTION_COLORS[emotion]);
+                        this.setState({
+                            emotion,
+                        });
+                    }
+
+                    console.log(emotion);
+                }
+            }, 1000);
+        } catch (error) {
+            console.log(error);
+        }
     };
 
     render() {
@@ -196,20 +208,35 @@ class App extends React.Component {
                                     Speech Recognition
                                 </div>
                             </div>
+                            <div className="btn-container">
+                                <div className="btn" onClick={this.onEmotionDetect}>
+                                    Emotion Recognition
+                                </div>
+                            </div>
                         </div>
 
                         <div className="light-bulb-container">
                             <div className="light-bulb">
                                 {this.state.isOn && <LightBulb color={this.state.color} />}
                                 {!this.state.isOn && (
-                                    <span role="img" aria-label="wtf" className="light-bulb-off">
+                                    <span role="img" aria-label="wtf" className="emoji">
                                         😱
                                     </span>
                                 )}
                             </div>
+
+                            {this.state.emotion && (
+                                <div>
+                                    <span role="img" aria-label="emotion" className="emoji">
+                                        {EMOTION_EMOJI[this.state.emotion]}
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     </>
                 )}
+
+                <video className="video-input" ref={this.videoRef} autoPlay muted />
             </div>
         );
     }

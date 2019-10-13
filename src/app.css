@@ -49,6 +49,11 @@ svg {
 }
 
 .light-bulb-container {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+
     width: 50%;
     height: 100%;
 
@@ -58,7 +63,7 @@ svg {
 }
 
 .light-bulb {
-    margin: 25%;
+    width: 50%;
 }
 
 .btn-container {
@@ -83,7 +88,7 @@ svg {
     stroke-miterlimit: 10;
 }
 
-.light-bulb-off {
+.emoji {
     font-size: 200px;
 }
 
@@ -115,6 +120,16 @@ svg {
 
     font-family: 'Gloria Hallelujah';
     font-size: 22px;
+}
+
+.video-input {
+    position: absolute;
+    z-index: -1;
+    top: 0;
+
+    height: 400px;
+
+    widows: 400px;
 }
 
 #one {

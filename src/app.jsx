@@ -87,11 +87,25 @@ class App extends React.Component {
 
     state = {
         color: getColor(DEFAULT_COLOR),
-        isConnected: true,
+        isConnected: false,
         isOn: true,
         emotion: null,
         appModel: APP_MODE.DEFAULT,
         isSpeechRecognition: false,
+        isTestMode: false,
+    };
+
+    onTestMode = () => {
+        this.setState({
+            isTestMode: true,
+            isConnected: true,
+        });
+    };
+
+    sendCommand = async data => {
+        if (!this.state.isTestMode) {
+            await this.characteristic.writeValue(data);
+        }
     };
 
     onPair = async () => {
@@ -118,13 +132,13 @@ class App extends React.Component {
 
         this.setState({ isConnected: true });
 
-        //  await this.characteristic.writeValue(getColorData(DEFAULT_COLOR));
+        await this.sendCommand(getColorData(DEFAULT_COLOR));
     };
 
     changeColor = async rgbColor => {
         this.setState({ color: getColor(rgbColor) });
 
-        //  await this.characteristic.writeValue(getColorData(rgbColor));
+        await this.sendCommand(getColorData(rgbColor));
     };
 
     handleChangeComplete = color => this.changeColor(color.rgb);
@@ -132,7 +146,7 @@ class App extends React.Component {
     onPowerToggle = async () => {
         const commandData = this.state.isOn ? POWER_OFF_DATA : POWER_ON_DATA;
 
-        // await this.characteristic.writeValue(commandData);
+        await this.sendCommand(commandData);
 
         this.setState({
             isOn: !this.state.isOn,
@@ -149,7 +163,7 @@ class App extends React.Component {
 
             this.setState({ color: getColor(color) });
 
-            //  await this.characteristic.writeValue(getColorData(color));
+            await this.sendCommand(getColorData(color));
         }, 1000);
     };
 
@@ -264,9 +278,15 @@ class App extends React.Component {
                 />
 
                 {!this.state.isConnected && (
-                    <button className="pair" onClick={this.onPair}>
-                        Connect
-                    </button>
+                    <>
+                        <button className="pair" onClick={this.onPair}>
+                            Connect
+                        </button>
+
+                        <button className="pair" onClick={this.onTestMode}>
+                            Test Mode
+                        </button>
+                    </>
                 )}
 
                 {this.state.isConnected && (

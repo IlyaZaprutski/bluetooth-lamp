@@ -36,3 +36,10 @@ export const EMOTION_EMOJI = {
     [FACE_API_EMOTION.SAD]: '😥',
     [FACE_API_EMOTION.SURPRISED]: '😮',
 };
+
+export const APP_MODE = {
+    DEFAULT: 'default',
+    RANDOM_COLOR: 'random_color',
+    SPEECH: 'speech',
+    EMOTION: 'emotion',
+};

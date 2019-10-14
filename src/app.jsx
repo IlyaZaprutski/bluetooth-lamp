@@ -15,7 +15,15 @@ import recognition from './speech-recognition';
 
 import { getColorData, getColor, getRandomRgb } from './tools';
 
-import { POWER_ON_DATA, POWER_OFF_DATA, DEFAULT_COLOR, COLORS_MAP, EMOTION_COLORS, EMOTION_EMOJI } from './constants';
+import {
+    POWER_ON_DATA,
+    POWER_OFF_DATA,
+    DEFAULT_COLOR,
+    COLORS_MAP,
+    EMOTION_COLORS,
+    EMOTION_EMOJI,
+    APP_MODE,
+} from './constants';
 
 import './app.css';
 
@@ -24,17 +32,30 @@ class App extends React.Component {
         super(props);
 
         this.videoRef = React.createRef();
+        this.emotionRef = React.createRef();
 
         recognition.onspeechend = () => {
             recognition.stop();
+
+            this.setState({
+                appModel: APP_MODE.DEFAULT,
+            });
         };
 
         recognition.onnomatch = () => {
             console.log("I didn't recognise that color.");
+
+            this.setState({
+                appModel: APP_MODE.DEFAULT,
+            });
         };
 
         recognition.onerror = event => {
             console.log(`Error occurred in recognition: ${event.error}`);
+
+            this.setState({
+                appModel: APP_MODE.DEFAULT,
+            });
         };
 
         recognition.onresult = event => {
@@ -47,6 +68,10 @@ class App extends React.Component {
                 toast('😢😢😢 Incorrect color!');
             }
 
+            this.setState({
+                appModel: APP_MODE.DEFAULT,
+            });
+
             console.log(`Result received: ${color}.`);
             console.log(`Confidence: ${event.results[0][0].confidence}`);
         };
@@ -57,6 +82,7 @@ class App extends React.Component {
         isConnected: true,
         isOn: true,
         emotion: null,
+        appModel: APP_MODE.DEFAULT,
     };
 
     onPair = async () => {
@@ -115,40 +141,67 @@ class App extends React.Component {
     };
 
     onSpeechDetect = () => {
+        this.setState({
+            appModel: APP_MODE.SPEECH,
+        });
+
         recognition.start();
     };
 
     onEmotionDetect = async () => {
         try {
+            this.setState({
+                appModel: APP_MODE.EMOTION,
+            });
+
             await Promise.all([
                 faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
                 faceapi.nets.faceExpressionNet.loadFromUri('/models'),
+                faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
             ]);
 
             const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
             const video = this.videoRef.current;
             video.srcObject = stream;
 
-            setInterval(async () => {
-                const detection = await faceapi
-                    .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
-                    .withFaceExpressions();
+            video.addEventListener('play', () => {
+                const canvas = faceapi.createCanvasFromMedia(video);
 
-                if (detection) {
-                    const emotion = Object.keys(detection.expressions).reduce((a, b) =>
-                        detection.expressions[a] > detection.expressions[b] ? a : b,
-                    );
+                this.emotionRef.current.append(canvas);
 
-                    if (this.state.emotion !== emotion) {
-                        this.changeColor(EMOTION_COLORS[emotion]);
-                        this.setState({
-                            emotion,
-                        });
+                const displaySize = { width: video.clientWidth, height: video.clientHeight };
+                faceapi.matchDimensions(canvas, displaySize);
+
+                setInterval(async () => {
+                    const detection = await faceapi
+                        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+                        .withFaceLandmarks()
+                        .withFaceExpressions();
+
+                    if (detection) {
+                        const resizedDetections = faceapi.resizeResults(detection, displaySize);
+                        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+
+                        faceapi.draw.drawDetections(canvas, resizedDetections);
+                        faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
+                        faceapi.draw.drawFaceExpressions(canvas, resizedDetections, 0.05);
+
+                        const emotion = Object.keys(detection.expressions).reduce((a, b) =>
+                            detection.expressions[a] > detection.expressions[b] ? a : b,
+                        );
+
+                        if (this.state.emotion !== emotion) {
+                            this.changeColor(EMOTION_COLORS[emotion]);
+
+                            this.setState({
+                                emotion,
+                            });
+                        }
+
+                        console.log(emotion);
                     }
-
-                    console.log(emotion);
-                }
-            }, 1000);
+                }, 500);
+            });
         } catch (error) {
             console.log(error);
         }
@@ -205,7 +258,7 @@ class App extends React.Component {
                             </div>
                             <div className="btn-container">
                                 <div className="btn" onClick={this.onSpeechDetect}>
-                                    Speech Recognition
+                                    {`Speech Recognition ${this.state.appModel === APP_MODE.SPEECH ? '👂' : ''}`}
                                 </div>
                             </div>
                             <div className="btn-container">
@@ -215,7 +268,7 @@ class App extends React.Component {
                             </div>
                         </div>
 
-                        <div className="light-bulb-container">
+                        <div className="output-container">
                             <div className="light-bulb">
                                 {this.state.isOn && <LightBulb color={this.state.color} />}
                                 {!this.state.isOn && (
@@ -233,10 +286,14 @@ class App extends React.Component {
                                 </div>
                             )}
                         </div>
+
+                        {this.state.appModel === APP_MODE.EMOTION && (
+                            <div className="output-container" ref={this.emotionRef}>
+                                <video className="video-input" ref={this.videoRef} autoPlay muted />
+                            </div>
+                        )}
                     </>
                 )}
-
-                <video className="video-input" ref={this.videoRef} autoPlay muted />
             </div>
         );
     }

@@ -48,7 +48,7 @@ svg {
     width: 100%;
 }
 
-.light-bulb-container {
+.output-container {
     display: flex;
     align-items: center;
     flex-direction: column;
@@ -60,6 +60,10 @@ svg {
     text-align: center;
 
     background-color: white;
+}
+
+.output-container canvas {
+    position: absolute;
 }
 
 .light-bulb {
@@ -123,13 +127,7 @@ svg {
 }
 
 .video-input {
-    position: absolute;
-    z-index: -1;
-    top: 0;
-
-    height: 400px;
-
-    widows: 400px;
+    width: 100%;
 }
 
 #one {

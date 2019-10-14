@@ -34,11 +34,16 @@ class App extends React.Component {
         this.videoRef = React.createRef();
         this.emotionRef = React.createRef();
 
+        this.randomColorIntervalId = null;
+        this.emotionIntervalId = null;
+        this.tracks = [];
+
         recognition.onspeechend = () => {
             recognition.stop();
 
             this.setState({
                 appModel: APP_MODE.DEFAULT,
+                isSpeechRecognition: false,
             });
         };
 
@@ -47,6 +52,7 @@ class App extends React.Component {
 
             this.setState({
                 appModel: APP_MODE.DEFAULT,
+                isSpeechRecognition: false,
             });
         };
 
@@ -55,6 +61,7 @@ class App extends React.Component {
 
             this.setState({
                 appModel: APP_MODE.DEFAULT,
+                isSpeechRecognition: false,
             });
         };
 
@@ -70,6 +77,7 @@ class App extends React.Component {
 
             this.setState({
                 appModel: APP_MODE.DEFAULT,
+                isSpeechRecognition: false,
             });
 
             console.log(`Result received: ${color}.`);
@@ -83,6 +91,7 @@ class App extends React.Component {
         isOn: true,
         emotion: null,
         appModel: APP_MODE.DEFAULT,
+        isSpeechRecognition: false,
     };
 
     onPair = async () => {
@@ -131,80 +140,111 @@ class App extends React.Component {
     };
 
     onRandomGenerate = () => {
-        setInterval(async () => {
+        this.setState({
+            appModel: APP_MODE.RANDOM_COLOR,
+        });
+
+        this.randomColorIntervalId = setInterval(async () => {
             const color = getRandomRgb();
 
             this.setState({ color: getColor(color) });
 
             //  await this.characteristic.writeValue(getColorData(color));
-        }, 700);
+        }, 1000);
+    };
+
+    onStopRandomGenerate = () => {
+        clearInterval(this.randomColorIntervalId);
+
+        this.setState({
+            appModel: APP_MODE.DEFAULT,
+        });
     };
 
     onSpeechDetect = () => {
+        if (this.state.isSpeechRecognition) {
+            return;
+        }
+
         this.setState({
             appModel: APP_MODE.SPEECH,
+            isSpeechRecognition: true,
         });
 
         recognition.start();
     };
 
     onEmotionDetect = async () => {
-        try {
-            this.setState({
-                appModel: APP_MODE.EMOTION,
-            });
+        this.setState({
+            appModel: APP_MODE.EMOTION,
+        });
 
-            await Promise.all([
-                faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-                faceapi.nets.faceExpressionNet.loadFromUri('/models'),
-                faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
-            ]);
+        await Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+            faceapi.nets.faceExpressionNet.loadFromUri('/models'),
+            faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+        ]);
 
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
-            const video = this.videoRef.current;
-            video.srcObject = stream;
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: true });
+        const video = this.videoRef.current;
+        video.srcObject = stream;
 
-            video.addEventListener('play', () => {
-                const canvas = faceapi.createCanvasFromMedia(video);
+        this.tracks = stream.getTracks();
 
-                this.emotionRef.current.append(canvas);
+        video.addEventListener('play', () => {
+            const canvas = faceapi.createCanvasFromMedia(video);
 
-                const displaySize = { width: video.clientWidth, height: video.clientHeight };
-                faceapi.matchDimensions(canvas, displaySize);
+            this.emotionRef.current.append(canvas);
 
-                setInterval(async () => {
-                    const detection = await faceapi
-                        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
-                        .withFaceLandmarks()
-                        .withFaceExpressions();
+            const displaySize = { width: video.clientWidth, height: video.clientHeight };
+            faceapi.matchDimensions(canvas, displaySize);
 
-                    if (detection) {
-                        const resizedDetections = faceapi.resizeResults(detection, displaySize);
-                        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+            this.emotionIntervalId = setInterval(async () => {
+                const detection = await faceapi
+                    .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+                    .withFaceLandmarks()
+                    .withFaceExpressions();
 
-                        faceapi.draw.drawDetections(canvas, resizedDetections);
-                        faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
-                        faceapi.draw.drawFaceExpressions(canvas, resizedDetections, 0.05);
+                if (detection) {
+                    const resizedDetections = faceapi.resizeResults(detection, displaySize);
+                    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
 
-                        const emotion = Object.keys(detection.expressions).reduce((a, b) =>
-                            detection.expressions[a] > detection.expressions[b] ? a : b,
-                        );
+                    faceapi.draw.drawDetections(canvas, resizedDetections);
+                    faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
+                    faceapi.draw.drawFaceExpressions(canvas, resizedDetections, 0.05);
 
-                        if (this.state.emotion !== emotion) {
-                            this.changeColor(EMOTION_COLORS[emotion]);
+                    const emotion = Object.keys(detection.expressions).reduce((a, b) =>
+                        detection.expressions[a] > detection.expressions[b] ? a : b,
+                    );
 
-                            this.setState({
-                                emotion,
-                            });
-                        }
+                    if (this.state.emotion !== emotion) {
+                        this.changeColor(EMOTION_COLORS[emotion]);
 
-                        console.log(emotion);
+                        this.setState({
+                            emotion,
+                        });
                     }
-                }, 500);
-            });
-        } catch (error) {
-            console.log(error);
-        }
+
+                    console.log(emotion);
+                }
+            }, 500);
+        });
+    };
+
+    onStopEmotionDetect = () => {
+        clearInterval(this.randomColorIntervalId);
+
+        this.setState({
+            appModel: APP_MODE.DEFAULT,
+        });
+
+        this.emotionRef.current.querySelector('canvas').remove();
+
+        this.tracks.forEach(track => {
+            track.stop();
+        });
+
+        this.videoRef.current.srcObject = null;
     };
 
     render() {
@@ -252,19 +292,52 @@ class App extends React.Component {
                             </div>
 
                             <div className="btn-container">
-                                <div className="btn" onClick={this.onRandomGenerate}>
-                                    Generate Random
-                                </div>
+                                {this.state.appModel === APP_MODE.RANDOM_COLOR ? (
+                                    <div className="btn" onClick={this.onStopRandomGenerate}>
+                                        Stop{' '}
+                                        <span role="img" aria-label="stop">
+                                            🛑
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <div className="btn" onClick={this.onRandomGenerate}>
+                                        Generate Random{' '}
+                                        <span role="img" aria-label="random">
+                                            🔀
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                             <div className="btn-container">
-                                <div className="btn" onClick={this.onSpeechDetect}>
-                                    {`Speech Recognition ${this.state.appModel === APP_MODE.SPEECH ? '👂' : ''}`}
-                                </div>
+                                {this.state.isSpeechRecognition ? (
+                                    <span role="img" aria-label="hear">
+                                        👂
+                                    </span>
+                                ) : (
+                                    <div className="btn" onClick={this.onSpeechDetect}>
+                                        Speech Recognition
+                                        <span role="img" aria-label="speech">
+                                            🗣️
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                             <div className="btn-container">
-                                <div className="btn" onClick={this.onEmotionDetect}>
-                                    Emotion Recognition
-                                </div>
+                                {this.state.appModel === APP_MODE.EMOTION ? (
+                                    <div className="btn" onClick={this.onStopEmotionDetect}>
+                                        Stop{' '}
+                                        <span role="img" aria-label="stop">
+                                            🛑
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <div className="btn" onClick={this.onEmotionDetect}>
+                                        Emotion Recognition{' '}
+                                        <span role="img" aria-label="emotion">
+                                            🥺
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -278,7 +351,7 @@ class App extends React.Component {
                                 )}
                             </div>
 
-                            {this.state.emotion && (
+                            {this.state.appModel === APP_MODE.EMOTION && this.state.emotion && (
                                 <div>
                                     <span role="img" aria-label="emotion" className="emoji">
                                         {EMOTION_EMOJI[this.state.emotion]}

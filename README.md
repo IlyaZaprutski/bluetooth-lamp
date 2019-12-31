@@ -1,2 +1,2 @@
-# triones-bluetooth
-Demo project for triones light bulb
+# lamp-bluetooth
+Demo project for bluetooth lamp

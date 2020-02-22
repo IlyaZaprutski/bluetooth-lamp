@@ -16,6 +16,8 @@ import recognition from './speech-recognition';
 
 import { getColorData, getColor, getRandomRgb } from './tools';
 
+import Fish from './fish.gif';
+
 import {
   POWER_ON_DATA,
   POWER_OFF_DATA,
@@ -94,6 +96,7 @@ class App extends React.Component {
     appModel: APP_MODE.DEFAULT,
     isSpeechRecognition: false,
     isTestMode: false,
+    isFish: false,
   };
 
   onTestMode = () => {
@@ -137,7 +140,9 @@ class App extends React.Component {
   };
 
   changeColor = async rgbColor => {
-    this.setState({ color: getColor(rgbColor) });
+    const color = getColor(rgbColor);
+
+    this.setState({ color, isFish: color === 'rgb(255,140,105)' });
 
     await this.sendCommand(getColorData(rgbColor));
   };
@@ -275,6 +280,12 @@ class App extends React.Component {
   };
 
   render() {
+    const bulbContent = this.state.isFish ? (
+      <img className="fish" src={Fish} alt="Fish" />
+    ) : (
+      <LightBulb color={this.state.color} />
+    );
+
     return (
       <div className="app-container">
         <ToastContainer
@@ -385,7 +396,7 @@ class App extends React.Component {
 
             <div className="output-container">
               <div className="light-bulb">
-                {this.state.isOn && <LightBulb color={this.state.color} />}
+                {this.state.isOn && bulbContent}
                 {!this.state.isOn && (
                   <span role="img" aria-label="wtf" className="emoji">
                     😱

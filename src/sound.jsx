@@ -73,9 +73,9 @@ class SoundCanvas extends PtsCanvas {
       // calculate spike shapes based on freqs
       const freqs = this.sound.freqDomainTo([this.bins, 1]);
 
-      const sd = this.sound.freqDomain();
-      const total = sd.reduce((acc, c) => acc + c, 0);
-      const rms = Math.sqrt(total / (sd.length / 2));
+      // const sd = this.sound.freqDomain();
+      // const total = sd.reduce((acc, c) => acc + c, 0);
+      // const rms = Math.sqrt(total / (sd.length / 2));
       // const decibel = 20 * (Math.log(rms) / Math.log(10));
 
       const tris = [];

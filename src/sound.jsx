@@ -76,7 +76,7 @@ class SoundCanvas extends PtsCanvas {
       const sd = this.sound.freqDomain();
       const total = sd.reduce((acc, c) => acc + c, 0);
       const rms = Math.sqrt(total / (sd.length / 2));
-      const decibel = 20 * (Math.log(rms) / Math.log(10));
+      // const decibel = 20 * (Math.log(rms) / Math.log(10));
 
       const tris = [];
       let tindex = 0;
